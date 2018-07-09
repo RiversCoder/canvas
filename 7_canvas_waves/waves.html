@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Waves</title>
+    <style type="text/css">
+        *{margin:0;padding:0;}
+        html,
+        body {
+            height: 100%;
+          overflow: hidden;
+        }
+
+        canvas {
+          display: block;
+        }
+    </style>
+</head>
+<body>
+    
+    <canvas></canvas>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/simplex-noise/2.3.0/simplex-noise.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.5/dat.gui.min.js"></script>
+    <!-- <script type="text/javascript">
+        var bar=function(){
+          //debugger;   
+          console.log(this.x);   
+        }
+        var foo={ 
+             x:3   
+        }   
+        
+        bar();  //undefined
+        console.log(bar.bind(foo))
+        bar.bind(foo)(); //3
+    
+        var func = bar.bind(foo);   
+        func(); //3
+    
+    </script> -->
+    <script type="text/javascript">
+        'use strict';
+
+        var gui = new dat.GUI(),
+            guiSet = {
+              frequency: 10,
+              reset: function () {
+                $.reset();
+              }
+            };
+        gui.add(guiSet, 'frequency').min(10).max(50);
+        gui.add(guiSet, 'reset');
+
+        //
+
+        var $ = {};
+
+        /*========================================
+        Utility
+        ========================================*/
+
+        $.PI = Math.PI;
+        $.TAU = $.PI * 2;
+
+        $.rand = function (min, max) {
+            if (!max) {
+                var max = min;
+                min = 0;
+            }
+            
+            return Math.random() * (max - min) + min;
+        };
+
+        /*========================================
+        Initialize
+        ========================================*/
+
+        $.init = function () {
+            $.c = document.querySelector('canvas');
+            $.ctx = $.c.getContext('2d');
+            $.simplex = new SimplexNoise();
+            //console.log($.simplex.noise2D(0,20,30))
+            $.events();
+            $.reset();
+            $.loop();
+        };
+
+        /*========================================
+        Reset
+        ========================================*/
+
+        $.reset = function () {
+            $.w = window.innerWidth;
+            $.h = window.innerHeight;
+            $.cx = $.w / 2;
+            $.cy = $.h / 2;
+            $.c.width = $.w;
+            $.c.height = $.h;
+
+            $.count = Math.floor($.w / guiSet.frequency); // Wave frequency
+            $.xoff = 0;
+            $.xinc = 0.05;
+            $.yoff = 0;
+            $.yinc = 0.01; // Speed
+            $.goff = 0;
+            $.ginc = 0;
+            $.y = $.h * 0.65;
+            $.length = $.w + 0;
+            $.amp = 15; // Wave height
+        };
+
+        /*========================================
+        Event
+        ========================================*/
+
+        $.events = function () {
+            window.addEventListener('resize', $.reset.bind(undefined));
+        };
+
+        /*========================================
+        Wave
+        ========================================*/
+
+        $.wave = function (color, amp, height, comp) {
+            
+            $.ctx.beginPath();
+            var sway = $.simplex.noise2D($.goff, 0) * amp;
+
+            for (var i = 0; i <= $.count; i++) {
+                $.xoff += $.xinc;
+                var x = /*$.cx - $.length / 2 + */ $.length / $.count * i;
+                var y = height + $.simplex.noise2D($.xoff, $.yoff) * amp + sway;
+                //console.log(x,y,$.simplex.noise2D($.xoff, $.yoff));
+                $.ctx[i === 0 ? 'moveTo' : 'lineTo'](x, y);
+            }
+
+            //debugger;
+            //console.log($.w, -$.h) 563 -974
+            $.ctx.lineTo($.w, -$.h); // -$.h - Vertically reflection
+            $.ctx.lineTo(0, -$.h); // -$.h - Vertically reflection
+            $.ctx.closePath();
+            $.ctx.fillStyle = color;
+
+            //debugger;
+
+            if (comp) {
+                $.ctx.globalCompositeOperation = comp;
+            }
+
+            $.ctx.fill();
+        };
+
+
+        /*========================================
+        Loop
+        ========================================*/
+
+
+        $.loop = function () {
+            requestAnimationFrame($.loop);
+
+            $.ctx.clearRect(0, 0, $.w, $.h);
+            $.xoff = 0;
+
+            $.ctx.fillStyle = "#182645";
+            $.ctx.fillRect(0, 0, $.w, $.h);
+
+            $.wave("#fb0000", 20, $.h * .5, "screen");
+            //$.wave("#00ff8e", 20, $.h * .5, "screen");
+            //$.wave("#6F33FF", 20, $.h * .5, "screen");
+
+            //$.ctx.fillStyle = "#f1dfdd";
+            
+            //$.ctx.globalCompositeOperation = "darken";
+
+            //$.ctx.fillRect(0, 0, $.w, $.h);
+
+            $.yoff += $.yinc;
+            //$.goff += $.ginc;
+        };
+
+        /*========================================
+        Start
+        ========================================*/
+
+        $.init();
+
+    </script>
+</body>
+</html>
