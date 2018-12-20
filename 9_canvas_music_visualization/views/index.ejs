@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= title %></title>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+  </head>
+  <body>
+
+    <header>
+        <h1><%= title %></h1>
+      <ul class="type" id="type">
+        <li date-type="dot">Dot</li>
+        <li date-type="column" class="selected">Column</li>
+      </ul>
+      <p>
+        Volume <input id="volume" type="range" min="0" max="100" value="30">
+      </p>
+    </header>
+
+    <div class="left">
+        <ul id="list">
+            <% music.forEach(function(name,index){ %>
+                <li title="<%= name %>" class="<%= index==0 ? 'selected': '' %>" data-index="<%= index %>"><%= name %></li>
+            <% }) %>
+        </ul>
+    </div>
+
+    <div class="right" id="box"></div>
+  <script type="text/javascript" src="/javascripts/visualizer.js"></script> 
+  <script type="text/javascript" src="/javascripts/music.js"></script> 
+  </body>
+</html>
