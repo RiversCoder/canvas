@@ -4,7 +4,7 @@ class Music{
         this.ac = new AudioContext();
         this.gainNode = this.ac.createGain();
         this.anayser = this.ac.createAnalyser();
-        this.anayser.fftSize = 512;
+        this.anayser.fftSize = 128*2;
         this.anayser.connect(this.gainNode);
         this.gainNode.connect(this.ac.destination);
         this.oldBufferSource = [];
@@ -17,7 +17,7 @@ class Music{
     //初始化
     init(){
         this.initDOM();
-        this.analyserAudioData();
+        //this.analyserAudioData();
     }   
 
     // 初始化DOM操作
@@ -97,52 +97,168 @@ class Music{
     }   
 
     // 分析音频节点
-    analyserAudioData(){
-        // 初始化一个空的 256位的 Unit8Array数组
+    analyserAudioData(callback){
+        // 初始化一个空的 128位的 Unit8Array数组
         let arr = new Uint8Array(this.anayser.frequencyBinCount);
         let self = this;
 
         // 将分析到的音频数据存入 arr数组中
         function musicVisible(){
             self.anayser.getByteFrequencyData(arr);
-            console.log(arr);
+            callback(arr);
             requestAnimationFrame(musicVisible);
         }
         musicVisible();
-    }
-
-   
+    } 
 }
 
 
+class Dot{
+    constructor({x,y,r,canvas,ctx,colors}){
 
+        this.x = x;
+        this.y = y;
+        this.r = r;
+
+        this.canvas = canvas;
+        this.ctx = ctx;
+        this.colors = colors;
+    }
+
+    draw(){
+
+        this.ctx.beginPath();
+        
+
+        this.ctx.arc(this.x,this.y,this.r,0,Math.PI*2,true);
+        this.fillRadial();
+        //this.ctx.fillStyle = '#fff';
+        //this.ctx.fill();
+    }
+
+    fillRadial(){
+
+        let radial = this.ctx.createRadialGradient(this.x,this.y,0,this.x,this.y,this.r);
+        radial.addColorStop(0, this.colors[0]);
+        radial.addColorStop(0.5, this.colors[1]);
+        radial.addColorStop(1, this.colors[2]);
+
+        this.ctx.fillStyle = radial;
+        this.ctx.fill();
+    }
+
+    update(){
+
+    }
+
+}
+
+class Column{
+
+    constructor({w,h,x,y,canvas,ctx,colors}){
+        this.w = w;
+        this.h = h;
+        this.x = x;
+        this.y = y;
+        
+        this.canvas = canvas;
+        this.ctx = ctx;
+        this.colors = colors;
+
+        //this.draw();
+    }
+
+    draw(){
+        this.fillRects();
+        this.ctx.beginPath();
+        this.ctx.fillRect(this.x,this.y,this.w,this.h);
+    }
+    
+    fillRects(){
+        let line = this.ctx.createLinearGradient(0,0,0,this.canvas.height);
+        line.addColorStop(0,this.colors[0]);
+        line.addColorStop(0.5,this.colors[1]);
+        line.addColorStop(1,this.colors[2]);
+        this.ctx.fillStyle = line;
+    }
+
+    update(){
+
+    }   
+}
 
 class Canvas{
 
     constructor(){
         this.box = document.querySelector('#box');
         this.canvas = document.createElement('canvas');
-        this.ctx = this.canvas.getContext();
+        this.ctx = this.canvas.getContext('2d');
+        this.music = new Music();
         this.canvasWidth = 0;
         this.canvasHeight = 0;
-        
+        this.size = 128;
+
+        // 图形绘制
+        this.type = 'column';
+        this.dots = [];
+        this.dotsPos = [];
+        this.columns = [];
+
+
         this.init();
     }
 
     init(){
         this.initCanvas();
-        this.initEvent();
     }
 
     // 初始化canvas盒子
     initCanvas(){
         this.box.appendChild(this.canvas);
-    }
-
-    initEvent(){
+        this.resizeCanvas();
         window.addEventListener('resize',() => {
             this.resizeCanvas();
+            this.initDotPos();
         })
+
+
+        this.initDotPos();
+        
+
+        // 图形化音频数据
+        this.music.analyserAudioData((arr) => {
+            this.drawRect(arr);
+            //console.log(arr);
+        });
+
+
+        // 点击切换柱状图和点状图
+        let btns = document.querySelector('#type').children;
+        let self = this;
+        Array.prototype.slice.call(btns).forEach(v => {
+            v.onclick = function(){
+                for(var i=0;i<btns.length;i++){
+                    btns[i].className = '';
+                }
+                this.className = 'selected';
+                self.type = this.dataset.type;
+            }
+        })
+    }
+
+
+    initDotPos(){
+        this.dotsPos = [];
+        // 初始化dot图形位置
+        for(let i=0;i<this.size;i++){
+            this.dotsPos.push({
+                x: this.canvasWidth*Math.random(),
+                y: this.canvasHeight*Math.random(),
+                colors: [this.getRamdomColor(),this.getRamdomColor(),this.getRamdomColor()],
+                ctx: this.ctx,
+                canvas: this.canvas
+            })
+        }    
     }
 
     resizeCanvas(){
@@ -151,8 +267,81 @@ class Canvas{
         this.canvas.width = this.canvasWidth;
         this.canvas.height = this.canvasHeight;
     }
+
+
+    // 绘制柱状图
+    drawRect(arr){
+        this.ctx.clearRect(0,0,this.canvasWidth,this.canvasHeight);
+
+        let w = this.canvasWidth / this.size;
+
+        for(let i=0;i<this.size;i++){
+            if(this.type == 'column'){
+                this.columns = [];
+                let h = this.canvasHeight * (arr[i]/256);
+                this.columns.push(new Column({
+                    x: w*i,
+                    y: this.canvasHeight-h,
+                    w: w*0.6,
+                    h: h,
+                    ctx: this.ctx,
+                    canvas: this.canvas,
+                    colors:[this.getRamdomColor(),this.getRamdomColor(),this.getRamdomColor()]
+                }));
+
+                this.drawColumn();
+            }else{
+                this.dots = [];
+                if((arr[i]/256)*50 == 0) return;
+                
+                this.dots.push(new Dot({
+                    x: this.dotsPos[i].x,
+                    y: this.dotsPos[i].y,
+                    r: (arr[i]/256)*50,
+                    ctx: this.dotsPos[i].ctx,
+                    canvas: this.dotsPos[i].canvas,
+                    colors: this.dotsPos[i].colors,
+                }));
+
+                this.drawDot();
+            }
+        }
+    }
+
+    // 绘制柱状图
+    drawColumn(){
+        this.columns.forEach(v => {
+            v.draw();
+        })
+    }
+
+    // 绘制点状图
+    drawDot(){
+        this.dots.forEach(v => {
+            v.draw();
+        })
+    }
+
+    // 获取随机颜色
+    getRamdomColor(){
+        return `rgb(${255*Math.random()},${255*Math.random()},${255*Math.random()})`;
+    }
+
+    // 获取两个数之间的随机数
+    getRamdomNumber(n,m){
+        return n + Math.floor((m-n)*Math.random());
+    }
+/*
+    fillRects(){
+        let line = this.ctx.createLinearGradient(0,0,0,this.canvasHeight);
+        line.addColorStop(0,'red');
+        line.addColorStop(0.5,'yellow');
+        line.addColorStop(1,'green');
+        this.ctx.fillStyle = line;
+    }*/
+    
 }
 
 
-const music = new Music();
+//const music = new Music();
 const canvas = new Canvas();
