@@ -1,64 +1,12 @@
-class AuidoVisualization{
-
-    constructor(){
-
-        this.ac = new AudioContext();
-        this.gainNode = this.ac.createGain();
-        this.anayser = this.ac.createAnalyser();
-        this.bufferSource = this.ac.createBufferSource();
-        this.anayser.fftSize = 128*2;
-        this.bufferSource.connect(this.anayser);
-        this.anayser.connect(this.gainNode);
-        this.gainNode.connect(this.ac.destination);
-    }   
-
-    request({url,method,callback}){
-        fetch(url,{
-            method: method,
-            responseType: 'arraybuffer'
-        }).then(res => {
-            return res.arrayBuffer();
-        }).then(data => {
-            this.ac.decodeAudioData(data,(buffer) => {
-                callback(buffer);
-            },(err) => {
-                console.log(err);
-            });
-        })
-    }
-
-    visualize(callback){
-        let arr = new Uint8Array(this.anayser.frequencyBinCount);
-        let self = this;
-
-        // 将分析到的音频数据存入 arr数组中
-        function musicVisible(){
-            self.anayser.getByteFrequencyData(arr);
-            callback(arr);
-            requestAnimationFrame(musicVisible);
-        }
-        musicVisible();
-    }
-
-    play(){
-        this.bufferSource.start(0);
-    }
-
-    stop(){
-        this.bufferSource.stop(0);
-    }
-
-    changeVolume(v){
-        this.gainNode.gain.value = v;
-    }
-}
-
-const av = new AuidoVisualization();
-
 class Music{
     
     constructor(){
-        this.audioVisualize = av;
+        this.ac = new AudioContext();
+        this.gainNode = this.ac.createGain();
+        this.anayser = this.ac.createAnalyser();
+        this.anayser.fftSize = 128*2;
+        this.anayser.connect(this.gainNode);
+        this.gainNode.connect(this.ac.destination);
         this.currentBufferSource = null;
         this.clickCount = 0;
         this.loadCount = 0;
@@ -68,6 +16,7 @@ class Music{
     //初始化
     init(){
         this.initDOM();
+        //this.analyserAudioData();
     }   
 
     // 初始化DOM操作
@@ -87,16 +36,27 @@ class Music{
             self.requestMusicData(item,index);
 
             // 修复连续点击bug
-            self.currentBufferSource&&self.audioVisualize.stop();
+            //self.clickCount++;
+            self.currentBufferSource&&self.currentBufferSource.stop();
           }
-
         });
 
         // 监听改变声音大小
-        this.audioVisualize.changeVolume(30/100);
+        self.gainNode.gain.value = volume.value/100;
         volume.addEventListener('change',function(){
-            self.audioVisualize.changeVolume(this.value/100);
+            self.gainNode.gain.value = this.value/100;
         })
+    }
+
+
+    ajax(url,callback){
+        let xhr = new XMLHttpRequest();
+        xhr.open('get',url,true);
+        xhr.responseType = 'arraybuffer';
+        xhr.send();
+        xhr.onload = function(res){
+            callback(res.target.response);
+        }
     }
 
     // 点击音乐列表请求音乐数据
@@ -106,19 +66,49 @@ class Music{
         let n = ++this.clickCount;
         
         //请求并且传递音乐名称
-        this.audioVisualize.request({
-            url: '/music/file?name='+item.innerText,
+        fetch('/music/file?name='+item.innerText,{
             method: 'get',
-            callback: (buffer) => {
+            responseType: 'arraybuffer'
+        }).then(res => {
+            if(n != this.clickCount) return;
+            return res.arrayBuffer();
+        }).then(data => {
+            this.ac.decodeAudioData(data,(buffer) => {
                 if(n != this.clickCount) return;
-                this.audioVisualize.bufferSource.buffer = buffer;
+                // 创建音频操作节点
+                let bufferSource = this.ac.createBufferSource();
+                bufferSource.buffer = buffer;
                 // 保存当前的音频操作节点
-                this.currentBufferSource = this.audioVisualize.bufferSource;
-                // 播放
-                this.audioVisualize.play();
-            }   
-        });
+                this.currentBufferSource = bufferSource;
+                // 连接设备
+                bufferSource.connect(this.anayser);
+                // 播放音频
+                bufferSource.start(0);
+            },(err) => {
+                console.log(err);
+            });
+        })
     }   
+
+    // 分析音频节点
+    analyserAudioData(callback){
+        // 初始化一个空的 128位的 Unit8Array数组
+        let arr = new Uint8Array(this.anayser.frequencyBinCount);
+        let self = this;
+
+        // 将分析到的音频数据存入 arr数组中
+        function musicVisible(){
+            self.anayser.getByteFrequencyData(arr);
+            callback(arr);
+            requestAnimationFrame(musicVisible);
+        }
+        musicVisible();
+    }
+
+    // 停止音频播放
+    stopMusicPlay(){
+        this.currentBufferSource.stop(0);
+    } 
 }
 
 
@@ -203,7 +193,6 @@ class Canvas{
         this.canvas = document.createElement('canvas');
         this.ctx = this.canvas.getContext('2d');
         this.music = new Music();
-        this.av = av;
         this.canvasWidth = 0;
         this.canvasHeight = 0;
         this.size = 128;
@@ -224,9 +213,7 @@ class Canvas{
 
     // 初始化canvas盒子
     initCanvas(){
-       
         this.box.appendChild(this.canvas);
-        
         this.resizeCanvas();
         window.addEventListener('resize',() => {
             this.resizeCanvas();
@@ -236,10 +223,13 @@ class Canvas{
 
         this.initDotPos();
         
+
         // 图形化音频数据
-        this.av.visualize((arr) => {
+        this.music.analyserAudioData((arr) => {
             this.drawRect(arr);
+            //console.log(arr);
         });
+
 
         // 点击切换柱状图和点状图
         let btns = document.querySelector('#type').children;

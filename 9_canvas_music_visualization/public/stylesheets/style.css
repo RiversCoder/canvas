@@ -61,7 +61,7 @@ header h1 {
     border: 1px solid white;
 }
 #type{
-    margin:0 auto;
+    margin: 0 auto;
     border: 1px solid white;
     border-radius: 6px;
     list-style-type: none;
@@ -71,10 +71,11 @@ header h1 {
     margin-bottom: 10px;
 }
 #type li {
-    width:50px;
+    width: 50px;
     float: left;
     line-height: 25px;
     width: 64px;
+    cursor: pointer;
 }
 #type li.selected {
     background-color: white;
