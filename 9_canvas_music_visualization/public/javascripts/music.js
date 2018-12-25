@@ -4,20 +4,22 @@ class Music{
         this.ac = new AudioContext();
         this.gainNode = this.ac.createGain();
         this.anayser = this.ac.createAnalyser();
-        this.anayser.fftSize = 512;
+        this.anayser.fftSize = 128*2;
         this.anayser.connect(this.gainNode);
         this.gainNode.connect(this.ac.destination);
         this.oldBufferSource = [];
         this.currentBufferSource = null;
         this.clickCount = 0;
         this.loadCount = 0;
+        this.canvas = new Canvas();
+
         this.init();
     }
 
     //初始化
     init(){
         this.initDOM();
-        this.analyserAudioData();
+        //this.analyserAudioData();
     }   
 
     // 初始化DOM操作
@@ -97,7 +99,7 @@ class Music{
     }   
 
     // 分析音频节点
-    analyserAudioData(){
+    analyserAudioData(callback){
         // 初始化一个空的 256位的 Unit8Array数组
         let arr = new Uint8Array(this.anayser.frequencyBinCount);
         let self = this;
@@ -105,16 +107,14 @@ class Music{
         // 将分析到的音频数据存入 arr数组中
         function musicVisible(){
             self.anayser.getByteFrequencyData(arr);
-            console.log(arr);
+            callback(arr);
             requestAnimationFrame(musicVisible);
         }
         musicVisible();
     }
 
-   
+    
 }
-
-
 
 
 class Canvas{
@@ -122,37 +122,60 @@ class Canvas{
     constructor(){
         this.box = document.querySelector('#box');
         this.canvas = document.createElement('canvas');
-        this.ctx = this.canvas.getContext();
+        this.ctx = this.canvas.getContext('2d');
+        this.music = new Music();
         this.canvasWidth = 0;
         this.canvasHeight = 0;
+        this.size = 128;
         
         this.init();
     }
 
     init(){
         this.initCanvas();
-        this.initEvent();
+        //this.initEvent();
     }
 
     // 初始化canvas盒子
     initCanvas(){
         this.box.appendChild(this.canvas);
-    }
-
-    initEvent(){
+        
+        this.resizeCanvas();
         window.addEventListener('resize',() => {
             this.resizeCanvas();
-        })
+        });
+
+        // 绘制
+        this.music.analyserAudioData((arr) => {
+            this.drawRect(arr);
+        });
     }
+
+    //绘制 柱状图
+    drawRect(arr){
+        this.ctx.clearRect(0,0,this.canvasWidth,this.canvasHeight);
+        let w = this.canvasWidth / this.size;
+
+        for(let i=0;i<size;i++){
+            let h = arr[i] / 256 * this.canvasHeight;
+            ctx.fillRect(w*i,this.cnvasHeight-h,w*0.6,h);
+        }
+    }
+
 
     resizeCanvas(){
         this.canvasWidth = this.box.clientWidth;
         this.canvasHeight = this.box.clientHeight;
         this.canvas.width = this.canvasWidth;
         this.canvas.height = this.canvasHeight;
+
+        let line = this.ctx.createLinearGradient(0,0,0,height);
+        line.addColorStop(0,'red');
+        line.addColorStop(0.5,'yellow');
+        line.addColorStop(1,'green');
+        this.ctx.fillStyle = line;
     }
 }
 
-
-const music = new Music();
 const canvas = new Canvas();
+const music = new Music();
