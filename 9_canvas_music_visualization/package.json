@@ -9,6 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "alloytouch": "^0.2.5",
     "debug": "^2.6.3",
     "ejs": "~2.3.3",
     "koa": "^2.2.0",
