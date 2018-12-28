@@ -2,6 +2,16 @@ class AuidoVisualization{
 
     constructor(){
 
+        this.ac = null;
+        this.gainNode = null;
+        this.anayser = null;
+        this.bufferSource = null;
+
+        this.init()
+    }   
+
+    //初始化音频节点资源
+    init(){
         this.ac = new AudioContext();
         this.gainNode = this.ac.createGain();
         this.anayser = this.ac.createAnalyser();
@@ -10,8 +20,9 @@ class AuidoVisualization{
         this.bufferSource.connect(this.anayser);
         this.anayser.connect(this.gainNode);
         this.gainNode.connect(this.ac.destination);
-    }   
+    }
 
+    // 获取音频资源
     request({url,method,callback}){
         fetch(url,{
             method: method,
@@ -20,6 +31,7 @@ class AuidoVisualization{
             return res.arrayBuffer();
         }).then(data => {
             this.ac.decodeAudioData(data,(buffer) => {
+                // 回调函数
                 callback(buffer);
             },(err) => {
                 console.log(err);
@@ -27,6 +39,7 @@ class AuidoVisualization{
         })
     }
 
+    // 可视化音频数据
     visualize(callback){
         let arr = new Uint8Array(this.anayser.frequencyBinCount);
         let self = this;
@@ -40,20 +53,23 @@ class AuidoVisualization{
         musicVisible();
     }
 
+    // 音频播放
     play(){
         this.bufferSource.start(0);
     }
 
+    // 停止播放
     stop(){
         this.bufferSource.stop(0);
     }
 
+    // 改变音量
     changeVolume(v){
         this.gainNode.gain.value = v;
     }
 }
 
-const av = new AuidoVisualization();
+let av = new AuidoVisualization();
 
 class Music{
     
@@ -84,12 +100,16 @@ class Music{
 
             arr.forEach((el) => { el.classList.remove('selected') });
             this.classList.add('selected');
+            
+            // 修复连续点击bug
+            self.currentBufferSource&&self.currentBufferSource.stop(0);
+
+            //console.log(item,index);
             self.requestMusicData(item,index);
 
-            // 修复连续点击bug
-            self.currentBufferSource&&self.audioVisualize.stop();
+            
+            console.log(self.currentBufferSource);
           }
-
         });
 
         // 监听改变声音大小
@@ -111,11 +131,16 @@ class Music{
             method: 'get',
             callback: (buffer) => {
                 if(n != this.clickCount) return;
+                // 创建音频操作节点
+                this.audioVisualize.bufferSource = this.audioVisualize.ac.createBufferSource();
+                // 获取音频buffer数据
                 this.audioVisualize.bufferSource.buffer = buffer;
-                // 保存当前的音频操作节点
+                // 连接设备
+                this.audioVisualize.bufferSource.connect(this.audioVisualize.anayser);
+                // 播放音频
+                this.audioVisualize.bufferSource.start(0);
+                // 获取当前的音频buffer资源
                 this.currentBufferSource = this.audioVisualize.bufferSource;
-                // 播放
-                this.audioVisualize.play();
             }   
         });
     }   
@@ -238,6 +263,7 @@ class Canvas{
         
         // 图形化音频数据
         this.av.visualize((arr) => {
+            //console.log(arr);
             this.drawRect(arr);
         });
 
@@ -351,6 +377,4 @@ class Canvas{
     
 }
 
-
-//const music = new Music();
 const canvas = new Canvas();
