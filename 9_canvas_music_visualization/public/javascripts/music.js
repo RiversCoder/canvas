@@ -147,6 +147,7 @@ class Music{
 }
 
 
+// 点状
 class Dot{
     constructor({x,y,r,canvas,ctx,colors}){
 
@@ -187,6 +188,7 @@ class Dot{
 
 }
 
+// 柱状
 class Column{
 
     constructor({w,h,x,y,canvas,ctx,colors}){
@@ -221,6 +223,39 @@ class Column{
     }   
 }
 
+
+// 柱状顶部音频格子
+class Cap{
+    constructor({w,h,x,y,canvas,ctx,colors}){
+        this.w = w;
+        this.h = h;
+        this.x = x;
+        this.y = y;
+        
+        this.canvas = canvas;
+        this.ctx = ctx;
+        this.colors = colors ? colors : 'rgba(255,255,255,1)';
+    }
+
+    draw(){
+        this.fillRects();
+        this.ctx.beginPath();
+        this.ctx.fillRect(this.x,this.y,this.w,this.h);
+    }
+    
+    fillRects(){
+        let line = this.ctx.createLinearGradient(0,0,0,this.canvas.height);
+        line.addColorStop(0,this.colors[0]);
+        line.addColorStop(0.5,this.colors[1]);
+        line.addColorStop(1,this.colors[2]);
+        this.ctx.fillStyle = line;
+    }
+
+    update(){
+
+    }
+}
+
 class Canvas{
 
     constructor(){
@@ -231,13 +266,14 @@ class Canvas{
         this.av = av;
         this.canvasWidth = 0;
         this.canvasHeight = 0;
-        this.size = 128;
+        this.size = 20;
 
         // 图形绘制
         this.type = 'column';
         this.dots = [];
         this.dotsPos = [];
         this.columns = [];
+        this.caps = [];
 
 
         this.init();
@@ -309,16 +345,32 @@ class Canvas{
         this.ctx.clearRect(0,0,this.canvasWidth,this.canvasHeight);
 
         let w = this.canvasWidth / this.size;
+        let columnWidth = w*0.6;
 
         for(let i=0;i<this.size;i++){
             if(this.type == 'column'){
                 this.columns = [];
+                this.caps = [];
                 let h = this.canvasHeight * (arr[i]/256);
+                let ch = columnWidth;
+
+                // 初始化 this.size 数量的柱状
                 this.columns.push(new Column({
                     x: w*i,
                     y: this.canvasHeight-h,
-                    w: w*0.6,
+                    w: columnWidth,
                     h: h,
+                    ctx: this.ctx,
+                    canvas: this.canvas,
+                    colors:[this.getRamdomColor(),this.getRamdomColor(),this.getRamdomColor()]
+                }));
+
+                // 初始化 this.size 数量的柱状帽
+                this.caps.push(new Cap({
+                    x: w*i,
+                    y: this.canvasHeight-h-ch-40,
+                    w: columnWidth,
+                    h: ch,
                     ctx: this.ctx,
                     canvas: this.canvas,
                     colors:[this.getRamdomColor(),this.getRamdomColor(),this.getRamdomColor()]
@@ -346,6 +398,9 @@ class Canvas{
     // 绘制柱状图
     drawColumn(){
         this.columns.forEach(v => {
+            v.draw();
+        })
+        this.caps.forEach(v => {
             v.draw();
         })
     }

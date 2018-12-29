@@ -224,6 +224,9 @@ class Canvas{
         this.initDotPos();
         
 
+        // 初始化柱状图
+        this.initRect();
+
         // 图形化音频数据
         this.music.analyserAudioData((arr) => {
             this.drawRect(arr);
@@ -245,6 +248,9 @@ class Canvas{
         })
     }
 
+    initRect(){
+        
+    }
 
     initDotPos(){
         this.dotsPos = [];
@@ -278,6 +284,7 @@ class Canvas{
             if(this.type == 'column'){
                 this.columns = [];
                 let h = this.canvasHeight * (arr[i]/256);
+                
                 this.columns.push(new Column({
                     x: w*i,
                     y: this.canvasHeight-h,
@@ -289,6 +296,7 @@ class Canvas{
                 }));
 
                 this.drawColumn();
+
             }else{
                 this.dots = [];
                 if((arr[i]/256)*50 == 0) return;
