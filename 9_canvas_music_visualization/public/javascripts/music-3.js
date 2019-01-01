@@ -154,7 +154,6 @@ class Dot{
         this.x = x;
         this.y = y;
         this.r = r;
-        this.dy = Math.random()*1.2
 
         this.canvas = canvas;
         this.ctx = ctx;
@@ -183,12 +182,8 @@ class Dot{
         this.ctx.fill();
     }
 
-    update(maxRadius){
-        this.y -= this.dy;
+    update(){
 
-        if(this.y < - maxRadius){
-            this.y = this.canvas.height;
-        }
     }
 
 }
@@ -205,6 +200,8 @@ class Column{
         this.canvas = canvas;
         this.ctx = ctx;
         this.colors = colors;
+
+        //this.draw();
     }
 
     draw(){
@@ -284,7 +281,7 @@ class Canvas{
         this.av = av;
         this.canvasWidth = 0;
         this.canvasHeight = 0;
-        this.size = 80;
+        this.size = 50;
 
         // 图形绘制
         this.type = 'column';
@@ -292,10 +289,7 @@ class Canvas{
         this.dotsPos = [];
         this.columns = [];
         this.caps = [];
-        this.wh = {
-            cw: 0,
-            ch: 0
-        };
+        this.onoff = true;
 
         this.init();
     }
@@ -309,21 +303,13 @@ class Canvas{
        
         this.box.appendChild(this.canvas);
         
-        let t = setTimeout(() => {
-            this.wh = {
-                cw: this.canvas.width,
-                ch: this.canvas.height
-            };
-            clearTimeout(t);
-        },500)
-
         this.resizeCanvas();
         window.addEventListener('resize',() => {
             this.resizeCanvas();
             this.initialChart();
-            //console.log(this.canvas.width,this.canvas.height,this.wh);
         })
         
+
         // 初始化图形
         this.initialChart();
 
@@ -355,8 +341,7 @@ class Canvas{
 
         // 初始化柱状
         for(let i=0;i<this.size;i++){
-            //let color = [this.getRamdomColor(),this.getRamdomColor(),this.getRamdomColor()];
-            let color = ['red','yellow','green'];
+            let color = [this.getRamdomColor(),this.getRamdomColor(),this.getRamdomColor()];
             this.columns.push(new Column({
                 x: 0,
                 y: 0,
@@ -379,6 +364,7 @@ class Canvas{
             }));
         }
         
+
         //初始化点状图
         this.initDotPos();
     }
@@ -387,13 +373,13 @@ class Canvas{
         this.dotsPos = [];
         // 初始化dot图形位置
         for(let i=0;i<this.size;i++){
-            this.dotsPos.push(new Dot({
+            this.dotsPos.push({
                 x: this.canvasWidth*Math.random(),
                 y: this.canvasHeight*Math.random(),
-                colors: ['rgba(255,255,255,0.8)',this.getRamdomColor(1),'rgba(255,255,255,0)'],
+                colors: [this.getRamdomColor(),this.getRamdomColor(),this.getRamdomColor()],
                 ctx: this.ctx,
                 canvas: this.canvas
-            }))
+            })
         }    
     }
 
@@ -411,7 +397,6 @@ class Canvas{
 
         let w = this.canvasWidth / this.size;
         let columnWidth = w*0.6;
-        let radius = 60;
 
         for(let i=0;i<this.size;i++){
             if(this.type == 'column'){
@@ -436,16 +421,15 @@ class Canvas{
                 this.caps[i].update(h);
                 this.caps[i].draw();
 
+
+                this.drawColumn();
             }else{
                 
-                if((arr[i]/256)*radius == 0) return;
-                //计算比例
-                let scale = (this.canvasHeight >= this.canvasWidth ? this.wh.cw/this.canvasWidth : this.wh.ch/this.canvasHeight )
-                if(scale > 1) scale = 1;
+                if((arr[i]/256)*50 == 0) return;
                 // 点状
-                this.dotsPos[i].r = (arr[i]/256)*radius*scale;
-                this.dotsPos[i].draw();
-                this.dotsPos[i].update(radius);
+                this.dotsPos[i].x = this.dotsPos[i].x;
+                this.dotsPos[i].y = this.dotsPos[i].y;
+                this.dotsPos[i].r = (arr[i]/256)*50;
             }
         }
     }
@@ -458,15 +442,15 @@ class Canvas{
     }
 
     // 获取随机颜色
-    getRamdomColor(alphas){
-        let alpha = alphas || 1;
-        return `rgba(${255*Math.random()},${255*Math.random()},${255*Math.random()},${alpha})`;
+    getRamdomColor(){
+        return `rgb(${255*Math.random()},${255*Math.random()},${255*Math.random()})`;
     }
 
     // 获取两个数之间的随机数
     getRamdomNumber(n,m){
         return n + Math.floor((m-n)*Math.random());
-    }    
+    }
+    
 }
 
 const canvas = new Canvas();

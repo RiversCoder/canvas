@@ -12,6 +12,10 @@ body {
     background-color: #000;
     color: white;
     text-align: center;
+    background-image: url(http://pic1.win4000.com/wallpaper/2018-05-15/5afa772589bf3.jpg);
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
 }
 header,
 .left,

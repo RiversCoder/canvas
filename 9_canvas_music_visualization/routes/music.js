@@ -14,7 +14,7 @@ router.get('/', async function (ctx, next) {
   let files = await readFiles();
   //console.log(files);
   await ctx.render('index', {
-    title: 'Hello Koa 2!',
+    title: 'H5 Music Audio',
     music: files
   });
   
@@ -36,8 +36,6 @@ router.get('/file',async function(ctx, next) {
     console.log(fileData);
     
     ctx.body = fileData
-    //console.log(ctx.query)
-    //console.log(ctx);
 });
 
 router.get('/bar', function (ctx, next) {
